@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from datetime import timedelta
+from datetime import date, timedelta
 
 Base = declarative_base()
 
@@ -100,7 +100,7 @@ class MaterialAutor(Base):
     autor_id = Column(Integer, ForeignKey('autores.id'), primary_key=True)
     material_id = Column(Integer, ForeignKey('materiais.id'), primary_key=True)
 
-class Exemplar(Base):
+class Exemplar(Base): # versao física do material (livro, tese ou dissertação)
     __tablename__ = 'exemplares'
     id = Column(Integer, primary_key=True)
     disponivel = Column(Integer)
@@ -109,7 +109,6 @@ class Exemplar(Base):
     material = relationship('Material', back_populates='exemplares')
     emprestimos = relationship('Emprestimo', back_populates='exemplar')
     reservas = relationship('Reserva', back_populates='exemplar')
-
 
 class Emprestimo(Base):
     __tablename__ = 'emprestimos'
@@ -124,12 +123,18 @@ class Emprestimo(Base):
     exemplar = relationship('Exemplar', back_populates='emprestimos')
 
     def calcular_multa(self):
+        if self.data_devolucao is not None:
+            return  
+
         prazo_devolucao = timedelta(days=7)
         data_vencimento = self.data_emprestimo + prazo_devolucao
-        
-        if self.data_devolucao and self.data_devolucao > data_vencimento:
-            dias_atraso = (self.data_devolucao - data_vencimento).days
-            self.multa = dias_atraso * 1.0 # 1 real por dia de atraso.
+
+        # Se ainda não devolveu, calcula multa em tempo real
+        data_referencia = date.today()
+
+        if data_referencia > data_vencimento:
+            dias_atraso = (data_referencia - data_vencimento).days
+            self.multa = dias_atraso * 1.0  # R$ 1 por dia de atraso
         else:
             self.multa = 0.0
 

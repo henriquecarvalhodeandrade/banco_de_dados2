@@ -55,13 +55,15 @@ def popular_dados_iniciais(session):
         Emprestimo(usuario=aluno1, exemplar=exemplares[8], data_emprestimo=hoje - timedelta(days=7)), 
         Emprestimo(usuario=aluno1, exemplar=exemplares[9], data_emprestimo=hoje - timedelta(days=10)), 
     ]
+    
+    # 📚 Adiciona o loop para atualizar a disponibilidade
+    for emp in emprestimos:
+        emp.exemplar.disponivel = 0
 
     session.add_all(emprestimos)
     session.commit()
 
-    # for emp in emprestimos:
-    #     titulo = emp.exemplar.material.titulo
-    #     print(f"📚 Empréstimo de '{titulo}' para {aluno1.nome} | Data do empréstimo: {emp.data_emprestimo}")
+    # Opcional: Remova o for loop que apenas printa informações se desejar.
 
 def setup_test_db():
     MYSQL_USER = 'root'

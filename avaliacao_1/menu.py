@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from classes_biblioteca import Base, Aluno, Professor, Funcionario, Exemplar, Emprestimo, Reserva
-from regras_negocio import realizar_emprestimo, devolver_material, reservar_material
+from regras_negocio import realizar_emprestimo, devolver_material, reservar_material, pagar_multa
 from tests import popular_dados_iniciais
 
 MYSQL_USER = 'root'
@@ -26,9 +26,14 @@ def listar_emprestimos(session):
         print("Não há empréstimos registrados.")
         return
     for emp in emprestimos:
+        emp.calcular_multa()
+        session.add(emp)
+        session.commit()
         status = "Devolvido" if emp.data_devolucao else "Em andamento"
         multa_info = f", Multa: R$ {emp.multa:.2f}" if emp.multa > 0 else ""
-        print(f"ID: {emp.id} | Usuário: {emp.usuario.nome} | Exemplar ID: {emp.exemplar.id} | Título: {emp.exemplar.material.titulo} | Data Empréstimo: {emp.data_emprestimo} | Status: {status}{multa_info}")
+        print(f"ID: {emp.id} | Usuário: {emp.usuario.nome} | Exemplar ID: {emp.exemplar.id} | "
+              f"Título: {emp.exemplar.material.titulo} | Data Empréstimo: {emp.data_emprestimo} | "
+              f"Status: {status}{multa_info}")
 
 def listar_reservas(session):
     reservas = session.query(Reserva).all()
@@ -48,6 +53,7 @@ def menu(session):
         print("5. Realizar empréstimo")
         print("6. Devolver material")
         print("7. Reservar material")
+        print("8. Pagar multa de empréstimo")
         print("0. Sair")
         opcao = input("Escolha uma opção: ")
 
@@ -87,6 +93,10 @@ def menu(session):
             else:
                 sucesso, mensagem = reservar_material(usuario, exemplar, session)
                 print(mensagem)
+        elif opcao == "8":
+            emprestimo_id = int(input("ID do empréstimo com multa a ser paga: "))
+            sucesso, mensagem = pagar_multa(emprestimo_id, session)
+            print(mensagem)
         elif opcao == "0":
             print("Saindo do sistema...")
             session.close()
