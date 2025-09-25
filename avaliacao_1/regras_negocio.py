@@ -13,12 +13,21 @@ def pode_emprestar(usuario, session):
         Emprestimo.data_devolucao.is_(None)
     ).count()
 
-    limite = LIMITES_EMPRESTIMOS.get(usuario.tipo, 0) 
-    
+    limite = LIMITES_EMPRESTIMOS.get(usuario.tipo, 0)
+
     if emprestimos_ativos >= limite:
         return False, f"Limite de empréstimos excedido para {usuario.nome}."
-    return True, "Empréstimo permitido."
 
+    multa_pendente = session.query(Emprestimo).filter(
+        Emprestimo.usuario_id == usuario.id,
+        Emprestimo.multa > 0
+    ).first()
+
+    if multa_pendente:
+        return False, f"Usuário {usuario.nome} possui multa pendente e não pode realizar novos empréstimos."
+
+    return True, "Empréstimo permitido."
+    
 def realizar_emprestimo(usuario, exemplar, session):
     if exemplar.disponivel == 0:
         return False, "O exemplar não está disponível para empréstimo."
@@ -68,4 +77,5 @@ def reservar_material(usuario, exemplar, session):
     session.add(reserva)
     session.commit()
     
+
     return True, f'Reserva de "{exemplar.material.titulo}" para {usuario.nome} realizada com sucesso!'
